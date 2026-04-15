@@ -49,19 +49,19 @@ pipeline {
 
         stage('Deploy to dev') {
             steps {
-                sh 'helm upgrade --install movie-platform-dev ./charts -n dev --kubeconfig /etc/rancher/k3s/k3s.yaml'
+                sh 'helm upgrade --install movie-platform-dev ./charts -n dev -f ./charts/values-dev.yaml --kubeconfig /etc/rancher/k3s/k3s.yaml'
             }
         }
 
         stage('Deploy to qa') {
             steps {
-                sh 'helm upgrade --install movie-platform-qa ./charts -n qa --kubeconfig /etc/rancher/k3s/k3s.yaml'
+                sh 'helm upgrade --install movie-platform-qa ./charts -n qa -f ./charts/values-qa.yaml --kubeconfig /etc/rancher/k3s/k3s.yaml'
             }
         }
 
         stage('Deploy to staging') {
             steps {
-                sh 'helm upgrade --install movie-platform-staging ./charts -n staging --kubeconfig /etc/rancher/k3s/k3s.yaml'
+                sh 'helm upgrade --install movie-platform-staging ./charts -n staging -f ./charts/values-staging.yaml --kubeconfig /etc/rancher/k3s/k3s.yaml'
             }
         }
 
@@ -72,7 +72,7 @@ pipeline {
             steps {
                 input message: 'Deploy to PRODUCTION?', ok: 'Deploy'
 
-                sh 'helm upgrade --install movie-platform-prod ./charts -n prod --kubeconfig /etc/rancher/k3s/k3s.yaml'
+                sh 'helm upgrade --install movie-platform-prod ./charts -n prod -f ./charts/values-prod.yaml --kubeconfig /etc/rancher/k3s/k3s.yaml'
             }
         }
     }
