@@ -40,5 +40,10 @@ pipeline {
                 }
             }
         }
+        stage('Deploy to dev') {
+            steps {
+                sh 'helm upgrade --install movie-platform-dev ./charts -n dev'
+            }
+        }
     }
 }
