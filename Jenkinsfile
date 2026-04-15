@@ -16,19 +16,16 @@ pipeline {
             }
         }
 
-        stage('Build movie-service image') {
+        stage('Build images') {
             steps {
-                sh 'docker build -t $DOCKERHUB_USERNAME/movie-service:latest -t $DOCKERHUB_USERNAME/movie-service:$IMAGE_TAG ./movie-service'
+                sh '''
+                    docker build -t $DOCKERHUB_USERNAME/movie-service:latest -t $DOCKERHUB_USERNAME/movie-service:$IMAGE_TAG ./movie-service
+                    docker build -t $DOCKERHUB_USERNAME/cast-service:latest -t $DOCKERHUB_USERNAME/cast-service:$IMAGE_TAG ./cast-service
+                '''
             }
         }
 
-        stage('Build cast-service image') {
-            steps {
-                sh 'docker build -t $DOCKERHUB_USERNAME/cast-service:latest -t $DOCKERHUB_USERNAME/cast-service:$IMAGE_TAG ./cast-service'
-            }
-        }
-
-        stage('Push images to DockerHub') {
+        stage('Push images') {
             steps {
                 withCredentials([
                     usernamePassword(
@@ -39,8 +36,10 @@ pipeline {
                 ]) {
                     sh '''
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+
                         docker push $DOCKERHUB_USERNAME/movie-service:latest
                         docker push $DOCKERHUB_USERNAME/movie-service:$IMAGE_TAG
+
                         docker push $DOCKERHUB_USERNAME/cast-service:latest
                         docker push $DOCKERHUB_USERNAME/cast-service:$IMAGE_TAG
                     '''
@@ -48,27 +47,32 @@ pipeline {
             }
         }
 
-        stage('Debug kube/helm context') {
+        stage('Deploy to dev') {
             steps {
-                sh '''
-                    echo "USER=$(whoami)"
-                    echo "HOME=$HOME"
-                    echo "KUBECONFIG=$KUBECONFIG"
-                    env | grep -E 'KUBE|K8S|HELM|HOME' || true
-                    ls -l /etc/rancher/k3s/k3s.yaml
-                    kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml cluster-info
-                    helm env
-                '''
+                sh 'helm upgrade --install movie-platform-dev ./charts -n dev --kubeconfig /etc/rancher/k3s/k3s.yaml'
             }
         }
 
-        stage('Deploy to dev') {
+        stage('Deploy to qa') {
             steps {
-                sh '''
-                    export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-                    kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml cluster-info
-                    helm upgrade --install movie-platform-dev ./charts -n dev --kubeconfig /etc/rancher/k3s/k3s.yaml
-                '''
+                sh 'helm upgrade --install movie-platform-qa ./charts -n qa --kubeconfig /etc/rancher/k3s/k3s.yaml'
+            }
+        }
+
+        stage('Deploy to staging') {
+            steps {
+                sh 'helm upgrade --install movie-platform-staging ./charts -n staging --kubeconfig /etc/rancher/k3s/k3s.yaml'
+            }
+        }
+
+        stage('Deploy to prod') {
+            when {
+                branch 'main'
+            }
+            steps {
+                input message: 'Deploy to PRODUCTION?', ok: 'Deploy'
+
+                sh 'helm upgrade --install movie-platform-prod ./charts -n prod --kubeconfig /etc/rancher/k3s/k3s.yaml'
             }
         }
     }
