@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cast-db
+spec:
+  type: {{ .Values.castDb.service.type }}
+  ports:
+    - port: {{ .Values.castDb.service.port }}
+      targetPort: 5432
+      protocol: TCP
+      name: postgres
+  selector:
+    app: cast-db

@@ -37,6 +37,11 @@ spec:
             - name: http
               containerPort: 8000
               protocol: TCP
+          env:
+            - name: DATABASE_URI
+              value: "{{ .Values.env.DATABASE_URI }}"
+            - name: CAST_SERVICE_HOST_URL
+              value: "{{ .Values.env.CAST_SERVICE_HOST_URL }}"
           livenessProbe:
             httpGet:
               path: /health

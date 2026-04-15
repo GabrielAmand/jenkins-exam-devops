@@ -1,52 +1,58 @@
-replicaCount: 1
+movieService:
+  image:
+    repository: gabrielamand/movie-service
+    tag: latest
+    pullPolicy: Always
+  service:
+    port: 8000
+    type: ClusterIP
+  env:
+    DATABASE_URI: "postgresql://movie_db_username:movie_db_password@movie-db/movie_db_dev"
+    CAST_SERVICE_HOST_URL: "http://cast-service:8000/api/v1/casts/"
 
-image:
-  repository: gabrielamand/movie-service
-  pullPolicy: Always
-  tag: "latest"
+castService:
+  image:
+    repository: gabrielamand/cast-service
+    tag: latest
+    pullPolicy: Always
+  service:
+    port: 8000
+    type: ClusterIP
+  env:
+    DATABASE_URI: "postgresql://cast_db_username:cast_db_password@cast-db/cast_db_dev"
 
-imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
+movieDb:
+  image:
+    repository: postgres
+    tag: 12.1-alpine
+    pullPolicy: IfNotPresent
+  service:
+    port: 5432
+    type: ClusterIP
+  env:
+    POSTGRES_USER: movie_db_username
+    POSTGRES_PASSWORD: movie_db_password
+    POSTGRES_DB: movie_db_dev
 
-serviceAccount:
-  create: true
-  annotations: {}
-  name: ""
+castDb:
+  image:
+    repository: postgres
+    tag: 12.1-alpine
+    pullPolicy: IfNotPresent
+  service:
+    port: 5432
+    type: ClusterIP
+  env:
+    POSTGRES_USER: cast_db_username
+    POSTGRES_PASSWORD: cast_db_password
+    POSTGRES_DB: cast_db_dev
 
-podAnnotations: {}
-
-podSecurityContext: {}
-
-securityContext: {}
-
-service:
-  type: NodePort
-  port: 80
-  nodePort: 30007
-  targetPort: 8000
-
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-  hosts:
-    - host: chart-example.local
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-  tls: []
-
-resources: {}
-
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 100
-  targetCPUUtilizationPercentage: 80
-
-nodeSelector: {}
-
-tolerations: []
-
-affinity: {}
+nginx:
+  image:
+    repository: nginx
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 8080
+    type: NodePort
+    nodePort: 30008

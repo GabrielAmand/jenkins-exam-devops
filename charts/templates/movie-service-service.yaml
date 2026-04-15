@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: movie-service
+spec:
+  type: {{ .Values.movieService.service.type }}
+  ports:
+    - port: {{ .Values.movieService.service.port }}
+      targetPort: 8000
+      protocol: TCP
+      name: http
+  selector:
+    app: movie-service
