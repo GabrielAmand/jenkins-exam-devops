@@ -4,6 +4,7 @@ pipeline {
     environment {
         DOCKERHUB_USERNAME = 'gabrielamand'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
+        KUBECONFIG = '/etc/rancher/k3s/k3s.yaml'
     }
 
     stages {
@@ -29,7 +30,13 @@ pipeline {
 
         stage('Push images to DockerHub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-creds',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
                     sh '''
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                         docker push $DOCKERHUB_USERNAME/movie-service:latest
@@ -40,9 +47,28 @@ pipeline {
                 }
             }
         }
+
+        stage('Debug kube/helm context') {
+            steps {
+                sh '''
+                    echo "USER=$(whoami)"
+                    echo "HOME=$HOME"
+                    echo "KUBECONFIG=$KUBECONFIG"
+                    env | grep -E 'KUBE|K8S|HELM|HOME' || true
+                    ls -l /etc/rancher/k3s/k3s.yaml
+                    kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml cluster-info
+                    helm env
+                '''
+            }
+        }
+
         stage('Deploy to dev') {
             steps {
-                sh 'helm upgrade --install movie-platform-dev ./charts -n dev'
+                sh '''
+                    export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+                    kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml cluster-info
+                    helm upgrade --install movie-platform-dev ./charts -n dev --kubeconfig /etc/rancher/k3s/k3s.yaml
+                '''
             }
         }
     }
