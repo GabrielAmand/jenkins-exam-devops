@@ -14,4 +14,8 @@ async def startup():
 async def shutdown():
     await database.disconnect()
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
 app.include_router(casts, prefix='/api/v1/casts', tags=['casts'])
